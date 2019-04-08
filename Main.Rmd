@@ -1,0 +1,23 @@
+---
+title: "Main"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r }
+
+library("RSQLite")
+db<-dbConnect(SQLite(),dbname="test.sqlite")
+summary(db)
+
+# Create Senator table 
+dbRemoveTable(db, "Senators")
+dbSendQuery(conn=db, "CREATE TABLE Senators_PI (Username TEXT PRIMARY KEY, Name TEXT, State TEXT)")
+dbWriteTable(conn = db, name = "senatorsdf", value = senators, row.names = F, append = T)
+dbReadTable(db, "Fips")
+
+
+```
