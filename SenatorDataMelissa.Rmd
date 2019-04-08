@@ -1,0 +1,59 @@
+---
+title: "SenatorDataMelissa"
+author: "Melissa Michels"
+date: "4/2/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/Users/melissamichels/Documents/Northeastern Spring 2019/DS4100")
+library(rtweet)
+library(httr)
+library(tidyverse)
+library(rvest)
+library(xml2)
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+access_token_secret <- "uTBqRxTxq5X1ir08qfxmOPBnkzMcSaLoHwEMMsEX7UO7N" #replace with your access token secret
+consumer_key       <- "9gA8Qke0e1LMXsKMXNo1Ws5jN" #replace with your key
+consumer_secret    <- "w1V5GWji8roYcnTrfpBFhEFqmjuaU56i6xDINFUisU0t3ftBje" #replace with your secret
+access_token       <- "342952076-IAH8xQctBhdm0E4duIjdTGO04ooVQzv8W4FAsr0S" #replace with your access token
+appname <- "DS4100_App"
+
+
+# create token named "twitter_token"
+twitter_token <- rtweet::create_token(app = appname,
+                                      consumer_key = consumer_key,
+                                      consumer_secret = consumer_secret,
+                                      access_token = access_token,
+                                      access_secret = access_token_secret)
+```
+
+```{r}
+load("senatorDataDF.Rda")
+beg_senators_1 <- senatorsdf[c(1:8),]
+beg_senators_2 <- senatorsdf[c(9:16),]
+beg_senators_3 <- senatorsdf[c(17:24),]
+beg_senators_4 <- senatorsdf[c(25:33),]
+```
+
+```{r}
+tweets_beg_1 <- get_timeline(beg_senators_1$twitter, n = 80, max_id = NULL, home = FALSE, parse = TRUE, check = TRUE, token = NULL)
+tweets_beg_2 <- get_timeline(beg_senators_2$twitter, n = 80, max_id = NULL, home = FALSE, parse = TRUE, check = TRUE, token = NULL)
+tweets_beg_3 <- get_timeline(beg_senators_3$twitter, n = 80, max_id = NULL, home = FALSE, parse = TRUE, check = TRUE, token = NULL)
+tweets_beg_4 <- get_timeline(beg_senators_4$twitter, n = 80, max_id = NULL, home = FALSE, parse = TRUE, check = TRUE, token = NULL)
+
+tweets_beg_all <- rbind(tweets_beg_1, tweets_beg_2)
+tweets_beg_all <- rbind(tweets_beg_all, tweets_beg_3)
+tweets_beg_all <- rbind(tweets_beg_all, tweets_beg_4)
+```
+
+```{r}
+save(tweets_beg_all, file="tweetsBegAll.Rda")
+```
+
