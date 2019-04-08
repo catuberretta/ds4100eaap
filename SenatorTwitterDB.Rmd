@@ -1,0 +1,80 @@
+---
+title: "SenatorTwitterDB"
+author: "Melissa Michels"
+date: "4/8/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+# Load the data that we scraped
+```{r}
+load("tweetsMidAll.Rda")
+load("tweetsEndAll.Rda")
+load("tweetsBegAll.Rda")
+```
+
+# Combine all tweets into one dataframe
+```{r}
+all_tweets <- rbind(tweets_beg_all, tweets_mid_all ,tweets_end_all)
+```
+
+# Create the senator personal information tibble
+```{r}
+load("senatorDataDF.Rda")
+senator_personal_information_df <- as.data.frame(senatorsdf)
+head(senator_personal_information_df)
+```
+
+# Create the tweet information tibble
+```{r}
+tweet_information <- all_tweets %>% select(screen_name, 
+                                           status_id, 
+                                           text, 
+                                           created_at, 
+                                           is_retweet, 
+                                           favorite_count, 
+                                           retweet_count, 
+                                           hashtags)
+# cleaning up is_retweet and hashtags column
+tweet_information$is_retweet <- as.integer(as.logical(tweet_information$is_retweet))
+getHashTags <- function(x) {
+  paste(unlist(x), collapse=',')
+}
+result <- lapply(tweet_information$hashtags, getHashTags)
+result <- unlist(result)
+
+tweet_information$hashtags <- result
+
+tweet_information_df <- data.frame(tweet_information)
+```
+
+
+# Create the tweet meta data tibble
+```{r}
+tweet_meta <- all_tweets %>% select(user_id,
+                                    status_id,
+                                    screen_name,
+                                    source,
+                                    reply_to_screen_name,
+                                    lang,
+                                    quoted_text,
+                                    quoted_source,
+                                    status_url,
+                                    description,
+                                    followers_count,
+                                    friends_count,
+                                    statuses_count,
+                                    verified,
+                                    profile_url)
+
+# cleaning up verified column
+
+tweet_meta$verified <- as.integer(as.logical(tweet_meta$verified))
+
+tweet_meta_df <- data.frame(tweet_meta)
+```
+
