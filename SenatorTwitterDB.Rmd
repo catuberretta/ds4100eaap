@@ -196,7 +196,8 @@ wordCounts %>%
   summarize(score = sum(count)) %>%
   mutate(share = score/sum(score) * 100) %>%
   ggplot(aes(x=sentiment, y=share, fill = sentiment)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity") + 
+  labs(title="Sentiment in US Senator Tweets", subtitle="Sentiment as share of sentiment words from last month's tweets.")
 
 wordCounts %>% 
   inner_join(bing) %>%
@@ -204,7 +205,8 @@ wordCounts %>%
   summarize(score = sum(count)) %>%
   mutate(share = score/sum(score) * 100) %>%
   ggplot(aes(x=sentiment, y=share, fill = sentiment)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity") + 
+  labs(title="Sentiment in US Senator Tweets", subtitle="Positive and negative sentiment as share of sentiment words from last month's tweets.")
 ```
 
 
@@ -220,7 +222,8 @@ tweet_text %>%
   ggplot() + 
   geom_bar(fill="lightsalmon2") + 
   aes(x=word) + 
-  coord_flip()
+  coord_flip() + 
+  labs(title="NGram for all Tweets", subtitle="n=4")
 
 tweet_text %>%
   unnest_tokens(word,text,token="ngrams",n=5) %>%
@@ -229,7 +232,8 @@ tweet_text %>%
   ggplot() + 
   geom_bar(fill="cyan3") + 
   aes(x=word) + 
-  coord_flip()
+  coord_flip() + 
+  labs(title="NGram for all Tweets", subtitle="n=5")
 
 tweet_text %>%
   unnest_tokens(word,text,token="ngrams",n=3) %>%
@@ -238,7 +242,8 @@ tweet_text %>%
   ggplot() + 
   geom_bar(fill="darkorchid") + 
   aes(x=word) + 
-  coord_flip()
+  coord_flip() + 
+  labs(title="NGram for all Tweets", subtitle="n=3")
 ```
 
 
@@ -272,6 +277,8 @@ hashtagCounts %>%
 
 Sentiment by Party
 ```{r}
-
+ggplot(all_tweets, aes(created_at, fill="cadetblue3")) +
+  geom_histogram() + 
+  labs(title="Distribution of Tweets")
 ```
 
