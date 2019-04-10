@@ -8,6 +8,11 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(tidytext)
+library(wordcloud)
+library(stm)
+library(rquery)
+library(reshape2)
 ```
 
 # Load the data that we scraped
@@ -18,12 +23,12 @@ load("tweetsBegAll.Rda")
 ```
 
 # Combine all tweets into one dataframe
-```{r}
-all_tweets <- rbind(tweets_beg_all, tweets_mid_all ,tweets_end_all)
+```{r merging data}
+all_tweets <- rbind(tweets_beg_all, tweets_mid_all, tweets_end_all)
 ```
 
 # Create the senator personal information tibble
-```{r}
+```{r personal information tibble}
 load("senatorDataDF.Rda")
 senator_personal_information_df <- as.data.frame(senatorsdf)
 head(senator_personal_information_df)
@@ -34,7 +39,7 @@ colnames(senator_personal_information_df) <- senator_rename
 ```
 
 # Create the tweet information tibble
-```{r}
+```{r tweet info tibble}
 tweet_information <- all_tweets %>% select(screen_name, 
                                            status_id, 
                                            text, 
@@ -46,7 +51,7 @@ tweet_information <- all_tweets %>% select(screen_name,
 # cleaning up is_retweet and hashtags column
 tweet_information$is_retweet <- as.integer(as.logical(tweet_information$is_retweet))
 getHashTags <- function(x) {
-  paste(unlist(x), collapse=',')
+  paste(unlist(x), collapse=' ')
 }
 result <- lapply(tweet_information$hashtags, getHashTags)
 result <- unlist(result)
@@ -55,7 +60,14 @@ tweet_information$hashtags <- result
 
 tweet_information_df <- data.frame(tweet_information)
 
-tweet_information_names <- c("Username", "Status_Id",  "Text", "Created_at", "Is_Retweet","Favorite_count", "Retweet_count", "Hashtag")
+tweet_information_names <- c("Username", 
+                             "Status_Id",  
+                             "Text", 
+                             "Created_at", 
+                             "Is_Retweet",
+                             "Favorite_count", 
+                             "Retweet_count", 
+                             "Hashtag")
 colnames(tweet_information_df) <- tweet_information_names
 
 ```
@@ -63,7 +75,7 @@ colnames(tweet_information_df) <- tweet_information_names
 
 
 # Create the tweet meta data tibble
-```{r}
+```{r meta data tibble}
 tweet_meta <- all_tweets %>% select(user_id,
                                     status_id,
                                     screen_name,
@@ -94,36 +106,39 @@ colnames(tweet_meta_df) <- tweet_meta_df_names
 
 ```
 
-```{r }
+# Create the EAAP (Emotional Analysis of American Politics) Database
+```{r database}
+fn <- "eaap.sqlite"
+#Check its existence
+if (file.exists(fn)) {
+  #Delete file if it exists
+  file.remove(fn) 
+}
 
 library("RSQLite")
-db<-dbConnect(SQLite(),dbname="test.sqlite")
+db<-dbConnect(SQLite(),dbname="eaap.sqlite")
 summary(db)
 
 # Create Senator table 
-dbRemoveTable(db, "Senators_PI")
-dbSendQuery(conn=db, "CREATE TABLE Senators_PI ( State TEXT, Name TEXT, Username TEXT PRIMARY KEY)")
+dbSendQuery(conn=db, "CREATE TABLE IF NOT EXISTS Senators_PI ( State TEXT, Name TEXT, Username TEXT PRIMARY KEY)")
 dbWriteTable(conn = db, name = "Senators_PI", value = senator_personal_information_df, row.names = F, append = T)
-dbReadTable(db, "Senators_PI")
+#dbReadTable(db, "Senators_PI")
 
 # Create Tweet table 
-dbRemoveTable(db, "Tweets")
-dbSendQuery(conn=db, "CREATE TABLE Tweets (Username TEXT, 
+dbSendQuery(conn=db, "CREATE TABLE IF NOT EXISTS Tweets (Username TEXT, 
             Status_Id TEXT, 
             Text TEXT,
             Created_at TEXT,
             Is_Retweet INTEGER,
             Favorite_count INTEGER, 
-        Retweet_count INTEGER,
+            Retweet_count INTEGER,
             Hashtag TEXT, 
             PRIMARY KEY (Username, Status_Id))")
 dbWriteTable(conn = db, name = "Tweets", value = tweet_information_df, row.names = F, append = T)
-dbReadTable(db, "Tweets")
+#dbReadTable(db, "Tweets")
 
 # Additional data
-dbRemoveTable(db, "Tweet_Metadata")
-
-dbSendQuery(conn=db, "CREATE TABLE Tweet_Metadata (UserID INTEGER,
+dbSendQuery(conn=db, "CREATE TABLE IF NOT EXISTS Tweet_Metadata (UserID INTEGER,
             Status_Id TEXT PRIMARY KEY, 
             Username TEXT, 
             Source TEXT,
@@ -139,8 +154,124 @@ dbSendQuery(conn=db, "CREATE TABLE Tweet_Metadata (UserID INTEGER,
             Verified INT,
             Profile_url TEXT)")
 dbWriteTable(conn = db, name = "Tweet_Metadata", value = tweet_meta_df, row.names = F, append = T)
-dbReadTable(db, "Tweet_Metadata")
+#dbReadTable(db, "Tweet_Metadata")
 
-dbListTables(db)
+#dbListTables(db)
 
 ```
+
+Word Cloud
+```{r wordcloud}
+
+all_tweets <- dbGetQuery(db, "SELECT *  
+                      FROM Tweets")
+
+
+tweet_text <- tibble(text = all_tweets$Text)
+
+fillerwords <- c("t.co", "https", "amp", "1", "2", "it's")
+fillerwordstable <- tibble("word" = fillerwords)
+
+tweet_text %>%
+  unnest_tokens(word, text) %>%
+  group_by(word) %>% summarize(count = n()) %>%
+  anti_join(stop_words) %>% # removing stop words
+  anti_join(fillerwordstable, by = "word") %>%
+  with(wordcloud(word, count, use.r.layout=FALSE, max.words = 150, random.order = FALSE, 
+                 colors = brewer.pal(6, "Dark2"), scale=c(3,.1)))
+```
+General Sentiment Analysis
+```{r}
+nrc = sentiments %>% filter(lexicon=="nrc")
+bing = sentiments %>% filter(lexicon=="bing")
+
+wordCounts <- tweet_text %>%
+  unnest_tokens(word, text) %>%
+  group_by(word) %>% 
+  summarize(count=n())
+
+wordCounts %>% 
+  inner_join(nrc) %>%
+  group_by(sentiment) %>%
+  summarize(score = sum(count)) %>%
+  mutate(share = score/sum(score) * 100) %>%
+  ggplot(aes(x=sentiment, y=share, fill = sentiment)) +
+  geom_bar(stat="identity")
+
+wordCounts %>% 
+  inner_join(bing) %>%
+  group_by(sentiment) %>%
+  summarize(score = sum(count)) %>%
+  mutate(share = score/sum(score) * 100) %>%
+  ggplot(aes(x=sentiment, y=share, fill = sentiment)) +
+  geom_bar(stat="identity")
+```
+
+
+ngrams
+```{r}
+fillerwords <- c("t.co", "https", "amp")
+fillerwordstable <- tibble("word" = fillerwords)
+
+tweet_text %>%
+  unnest_tokens(word,text,token="ngrams",n=4) %>%
+  group_by(word) %>%
+  filter(n()>35) %>%
+  ggplot() + 
+  geom_bar(fill="lightsalmon2") + 
+  aes(x=word) + 
+  coord_flip()
+
+tweet_text %>%
+  unnest_tokens(word,text,token="ngrams",n=5) %>%
+  group_by(word) %>%
+  filter(n()>12) %>%
+  ggplot() + 
+  geom_bar(fill="cyan3") + 
+  aes(x=word) + 
+  coord_flip()
+
+tweet_text %>%
+  unnest_tokens(word,text,token="ngrams",n=3) %>%
+  group_by(word) %>%
+  filter(n()>100) %>%
+  ggplot() + 
+  geom_bar(fill="darkorchid") + 
+  aes(x=word) + 
+  coord_flip()
+```
+
+
+Hashtag Analysis
+```{r}
+hashtags <- tibble(text = all_tweets$Hashtag)
+
+hashtagCounts <- hashtags %>%
+  unnest_tokens(word, text) %>%
+  group_by(word) %>% summarize(count = n()) %>%
+  anti_join(stop_words) %>%# removing stop words
+  arrange(desc(count)) %>%
+  filter(word != "na")
+
+top10 <- top_n(hashtagCounts, 10)
+
+hashtagCounts
+
+top10 %>% 
+  ggplot() + 
+  geom_bar(fill="darkolivegreen4", aes(x=word, y=count),stat="identity") + 
+  coord_flip()
+
+
+hashtagCounts %>%
+  with(wordcloud(word, count, use.r.layout=FALSE, max.words = 150, random.order = FALSE, 
+                 colors = brewer.pal(8, "Dark2"), scale=c(3,.4)))
+```
+
+
+
+Sentiment by Party
+```{r}
+
+```
+
