@@ -48,7 +48,7 @@ tweet_information <- all_tweets %>% select(screen_name,
                                            favorite_count, 
                                            retweet_count, 
                                            hashtags)
-# cleaning up is_retweet and hashtags column
+# cleaning up is_retweet, hashtags column, and dates
 tweet_information$is_retweet <- as.integer(as.logical(tweet_information$is_retweet))
 getHashTags <- function(x) {
   paste(unlist(x), collapse=' ')
@@ -57,6 +57,8 @@ result <- lapply(tweet_information$hashtags, getHashTags)
 result <- unlist(result)
 
 tweet_information$hashtags <- result
+
+tweet_information$created_at <- as.character(tweet_information$created_at)
 
 tweet_information_df <- data.frame(tweet_information)
 
@@ -71,7 +73,6 @@ tweet_information_names <- c("Username",
 colnames(tweet_information_df) <- tweet_information_names
 
 ```
-
 
 
 # Create the tweet meta data tibble
@@ -106,6 +107,80 @@ colnames(tweet_meta_df) <- tweet_meta_df_names
 
 ```
 
+Senator Details for Number of Followers, Avg Retweets, and Avg Favorites
+```{r}
+# Average number of retweets/favorites per tweet
+info1 <- tweet_information_df %>% group_by(Username) %>% summarize(avgretweets = mean(Retweet_count),
+                                                          avgfavorites = mean(Favorite_count))
+# Number of followers
+info2 <- tweet_meta_df %>% group_by(Username) %>% summarise(numfollowers = max(Followers_count))
+info2
+
+activityindexvaluesdf <- inner_join(info1, info2, by="Username")
+head(activityindexvaluesdf)
+```
+
+Relationship between number of followers and average retweets per tweet
+```{r}
+ggplot(popularityindexvaluesdf, aes(x=numfollowers, y=avgretweets)) + 
+  geom_point() +
+  geom_smooth() + 
+  labs(title="Number of followers vs. Average Retweets")
+```
+
+Relationship between number of followers and average favorites per tweet
+```{r}
+ggplot(popularityindexvaluesdf, aes(x=numfollowers, y=avgfavorites)) + 
+  geom_point() +
+  geom_smooth() + 
+  labs(title="Number of followers vs. Average Favorites")
+```
+```{r}
+ggplot(popularityindexvaluesdf, aes(x=avgretweets, y=avgfavorites)) + 
+  geom_point() +
+  geom_smooth() + 
+  labs(title="Average Favorites vs. Average Retweets")
+```
+
+As displayed above, the relationship between a Senator's average favorites and average retweets is stronger than the relationship between reweets/favorites and their number of followers. Because we would like to measure a Senator's engagement on the social media platform, average retweets and average favorites will be weighted higher in calculating their scores.
+
+We will also normalize the data using mix/max normalization - by mapping all values between 0 and 1. This will allow for standardized comparisons.
+
+Calculating the Activity Index
+```{r}
+normalize <- function(x) {
+    ((x - min(x)) / (max(x) - min(x)))
+}
+
+# First, normalize the the date
+activityindexvaluesdf[2:4] <- as.data.frame(lapply(activityindexvaluesdf[2:4], normalize))
+
+activityindexdf <- activityindexvaluesdf %>% group_by(Username) %>% summarise(activityindex = sum((.375*avgretweets),
+                                                                             (.375*avgfavorites),
+                                                                             (.25*numfollowers)))
+activityindexdf %>% arrange(desc(activityindex))
+```
+A Senator's activity index is calculated by observing three factors of their online twitter presence. 25% of their score is comprised of the number of followers for that senator. 37.5% is calculated by their average number of rewteets per tweet and 37.5% is comprised of the average number of favorites they receive per tweet.
+
+So who are the most active senators?
+```{r}
+activityindexdf %>% arrange(desc(activityindex))
+
+activityindexdf %>% top_n(10) %>%
+  ggplot() + 
+  geom_point(fill="lightsalmon2", size=5, shape=21) + 
+  aes(x= Username, y=activityindex) + 
+  coord_flip() + 
+  labs(title="Top 10 Most Active Senators")
+```
+
+Adding Activity Index to the Senator Personal Information Dataframe
+```{r}
+senator_personal_information_df <- left_join(senator_personal_information_df, activityindexdf, by="Username")
+senator_personal_information_df
+```
+
+
 # Create the EAAP (Emotional Analysis of American Politics) Database
 ```{r database}
 fn <- "eaap.sqlite"
@@ -120,7 +195,10 @@ db<-dbConnect(SQLite(),dbname="eaap.sqlite")
 summary(db)
 
 # Create Senator table 
-dbSendQuery(conn=db, "CREATE TABLE IF NOT EXISTS Senators_PI ( State TEXT, Name TEXT, Username TEXT PRIMARY KEY)")
+dbSendQuery(conn=db, "CREATE TABLE IF NOT EXISTS Senators_PI ( State TEXT, 
+            Name TEXT, 
+            Username TEXT PRIMARY KEY,
+            activityindex REAL)")
 dbWriteTable(conn = db, name = "Senators_PI", value = senator_personal_information_df, row.names = F, append = T)
 #dbReadTable(db, "Senators_PI")
 
@@ -274,11 +352,13 @@ hashtagCounts %>%
 ```
 
 
-
-Sentiment by Party
+--> Should we filter?
 ```{r}
-ggplot(all_tweets, aes(created_at, fill="cadetblue3")) +
+dates <- as.Date(all_tweets$Created_at)
+
+ggplot(all_tweets, aes(dates, fill="cadetblue3")) +
   geom_histogram() + 
   labs(title="Distribution of Tweets")
 ```
 
+# Max favorites on a tweet (most popular tweet?)
