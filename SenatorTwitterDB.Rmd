@@ -366,3 +366,97 @@ ggplot(all_tweets, aes(dates, fill="cadetblue3")) +
   geom_histogram() + 
   labs(title="Distribution of Tweets")
 ```
+
+Green New Deal
+```{r}
+gnd <- dbGetQuery(db, "SELECT t.Username, Text, State, Hashtag FROM Tweets t INNER JOIN Senators_PI s ON t.Username = s.Username WHERE Hashtag LIKE '%GreenNewDeal%'")
+
+gnd_text <- tibble(text = gnd$Text)
+
+gndSentiment <- gnd_text %>% 
+  unnest_tokens(word, text) %>%
+  group_by(word) %>%
+  summarize(count=n())
+
+gndSentiment %>% 
+  inner_join(nrc) %>%
+  group_by(sentiment) %>%
+  summarize(score = sum(count)) %>%
+  mutate(share = score/sum(score) * 100) %>%
+  ggplot(aes(x=sentiment, y=share, fill = sentiment)) +
+  geom_bar(stat="identity")
+
+gndSentiment %>% 
+  inner_join(bing) %>%
+  group_by(sentiment) %>%
+  summarize(score = sum(count)) %>%
+  mutate(share = score/sum(score) * 100) %>%
+  ggplot(aes(x=sentiment, y=share, fill = sentiment)) +
+  geom_bar(stat="identity")
+
+```
+
+GND State Analysis
+```{r}
+gnd_text_state <- tibble(text = gnd$Text, state = gnd$State)
+
+gndSentimentState <- gnd_text_state %>% 
+  unnest_tokens(word, text) %>%
+  group_by(state, word) %>%
+  summarize(count=n())
+
+gndSentimentStateAnalysis <- gndSentimentState %>% 
+  inner_join(bing) %>%
+  group_by(state, sentiment) %>%
+  summarize(score = sum(count)) %>%
+  mutate(share = score/sum(score) * 100)
+
+gndSentimentStateAnalysis %>%
+  ggplot(aes(x=state, y=share, fill = sentiment)) +
+  geom_bar(stat="identity")
+```
+
+Women's History Month
+```{r}
+whm <- dbGetQuery(db, "SELECT t.Username, Text, State, Hashtag FROM Tweets t INNER JOIN Senators_PI s ON t.Username = s.Username WHERE Hashtag LIKE '%WomensHistoryMonth%'")
+
+whm_text <- tibble(text = whm$Text)
+
+whmSentiment <- whm_text %>% 
+  unnest_tokens(word, text) %>%
+  group_by(word) %>%
+  summarize(count=n())
+
+whmSentiment %>% 
+  inner_join(nrc) %>%
+  group_by(sentiment) %>%
+  summarize(score = sum(count)) %>%
+  mutate(share = score/sum(score) * 100) %>%
+  ggplot(aes(x=sentiment, y=share, fill = sentiment)) +
+  geom_bar(stat="identity")
+
+whmSentiment %>% 
+  inner_join(bing) %>%
+  group_by(sentiment) %>%
+  summarize(score = sum(count)) %>%
+  mutate(share = score/sum(score) * 100) %>%
+  ggplot(aes(x=sentiment, y=share, fill = sentiment)) +
+  geom_bar(stat="identity")
+
+whm_text_state <- tibble(text = whm$Text, state = whm$State)
+
+whmSentimentState <- whm_text_state %>% 
+  unnest_tokens(word, text) %>%
+  group_by(state, word) %>%
+  summarize(count=n())
+
+whmSentimentStateAnalysis <- whmSentimentState %>% 
+  inner_join(bing) %>%
+  group_by(state, sentiment) %>%
+  summarize(score = sum(count)) %>%
+  mutate(share = score/sum(score) * 100)
+
+whmSentimentStateAnalysis %>%
+  ggplot(aes(x=state, y=share, fill = sentiment)) +
+  geom_bar(stat="identity")
+```
