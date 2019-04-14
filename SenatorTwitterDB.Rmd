@@ -195,7 +195,12 @@ activityindexdf %>% top_n(10) %>%
 
 Adding Activity Index to the Senator Personal Information Dataframe
 ```{r}
-senator_personal_information_df <- left_join(senator_personal_information_df, activityindexdf, by="Username")
+if(!("activityindex" %in% colnames(senator_personal_information_df)))
+   {
+  senator_personal_information_df <- left_join(senator_personal_information_df, activityindexdf, by="Username")
+  }
+
+senator_personal_information_df$X1 <- NULL
 ```
 
 ## Part 4. Database Creation
@@ -214,8 +219,10 @@ db<-dbConnect(SQLite(),dbname="eaap.sqlite")
 summary(db)
 
 # Create Senator table 
-dbSendQuery(conn=db, "CREATE TABLE IF NOT EXISTS Senators_PI ( State TEXT, 
-            Name TEXT, 
+dbSendQuery(conn=db, "CREATE TABLE IF NOT EXISTS Senators_PI ( 
+            Name TEXT,
+            Party TEXT,
+            State TEXT,
             Username TEXT PRIMARY KEY,
             activityindex REAL)")
 dbWriteTable(conn = db, name = "Senators_PI", value = senator_personal_information_df, row.names = F, append = T)
