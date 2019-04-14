@@ -1,10 +1,11 @@
 ---
-title: "SenatorTwitterDB"
-author: "Melissa Michels"
+title: "Sentiment Analysis in American Politics - Twitter Data from March"
+author: "Melissa Michels, Fiona Tran, Catu Barretta"
 date: "4/8/2019"
 output: html_document
 ---
 
+Libraries
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
@@ -15,19 +16,24 @@ library(rquery)
 library(reshape2)
 ```
 
-# Load the data that we scraped
+## Part 1. Data Collection
+
+Loading data pulled using the rtweet API
 ```{r}
 load("tweetsMidAll.Rda")
 load("tweetsEndAll.Rda")
 load("tweetsBegAll.Rda")
 ```
+We aimed for all members of our group to become familiar with the rtweet API. We split the 100 senators among the three of us to obtain the data. This allowed us to minimize time spent obtaining the data and allowed for more efficient data collection. We each created a dataframe and saved it as a .Rda object. The code above loads the dataframes that we individually created.
 
-# Combine all tweets into one dataframe
+Combine all tweets into one dataframe
 ```{r merging data}
 all_tweets <- rbind(tweets_beg_all, tweets_mid_all, tweets_end_all)
 ```
 
-# Create the senator personal information tibble
+## Part 2. Data Cleaning
+
+Create the senator personal information tibble
 ```{r personal information tibble}
 load("senatorDataDF.Rda")
 senator_personal_information_df <- as.data.frame(senatorsdf)
@@ -35,10 +41,9 @@ head(senator_personal_information_df)
 
 senator_rename <- c("State", "Name", "Username")
 colnames(senator_personal_information_df) <- senator_rename
-
 ```
 
-# Create the tweet information tibble
+Create the tweet information tibble
 ```{r tweet info tibble}
 tweet_information <- all_tweets %>% select(screen_name, 
                                            status_id, 
@@ -75,7 +80,7 @@ colnames(tweet_information_df) <- tweet_information_names
 ```
 
 
-# Create the tweet meta data tibble
+Create the tweet meta data tibble
 ```{r meta data tibble}
 tweet_meta <- all_tweets %>% select(user_id,
                                     status_id,
@@ -103,9 +108,9 @@ tweet_meta_df_names <- c("UserId", "Status_Id", "Username" , "Source", "Reply_to
             "Quoted_text", "Quoted_source", "Status_url","Description", "Followers_count", "Friends_count",
             "Statuses_count", "Verified", "Profile_url")
 colnames(tweet_meta_df) <- tweet_meta_df_names
-
-
 ```
+
+## Part 3. Exploratory Data Analysis
 
 Senator Details for Number of Followers, Avg Retweets, and Avg Favorites
 ```{r}
@@ -122,7 +127,7 @@ head(activityindexvaluesdf)
 
 Relationship between number of followers and average retweets per tweet
 ```{r}
-ggplot(popularityindexvaluesdf, aes(x=numfollowers, y=avgretweets)) + 
+ggplot(activityindexvaluesdf, aes(x=numfollowers, y=avgretweets)) + 
   geom_point() +
   geom_smooth() + 
   labs(title="Number of followers vs. Average Retweets")
@@ -130,13 +135,13 @@ ggplot(popularityindexvaluesdf, aes(x=numfollowers, y=avgretweets)) +
 
 Relationship between number of followers and average favorites per tweet
 ```{r}
-ggplot(popularityindexvaluesdf, aes(x=numfollowers, y=avgfavorites)) + 
+ggplot(activityindexvaluesdf, aes(x=numfollowers, y=avgfavorites)) + 
   geom_point() +
   geom_smooth() + 
   labs(title="Number of followers vs. Average Favorites")
 ```
 ```{r}
-ggplot(popularityindexvaluesdf, aes(x=avgretweets, y=avgfavorites)) + 
+ggplot(activityindexvaluesdf, aes(x=avgretweets, y=avgfavorites)) + 
   geom_point() +
   geom_smooth() + 
   labs(title="Average Favorites vs. Average Retweets")
@@ -177,11 +182,11 @@ activityindexdf %>% top_n(10) %>%
 Adding Activity Index to the Senator Personal Information Dataframe
 ```{r}
 senator_personal_information_df <- left_join(senator_personal_information_df, activityindexdf, by="Username")
-senator_personal_information_df
 ```
 
+## Part 4. Database Creation
 
-# Create the EAAP (Emotional Analysis of American Politics) Database
+Creating the EAAP (Emotional Analysis of American Politics) Database
 ```{r database}
 fn <- "eaap.sqlite"
 #Check its existence
@@ -237,6 +242,8 @@ dbWriteTable(conn = db, name = "Tweet_Metadata", value = tweet_meta_df, row.name
 #dbListTables(db)
 
 ```
+
+## Part 5. Data Analysis
 
 Word Cloud
 ```{r wordcloud}
@@ -351,8 +358,7 @@ hashtagCounts %>%
                  colors = brewer.pal(8, "Dark2"), scale=c(3,.4)))
 ```
 
-
---> Should we filter?
+Distribution of Tweets: Based on the date that they were created.
 ```{r}
 dates <- as.Date(all_tweets$Created_at)
 
@@ -360,5 +366,3 @@ ggplot(all_tweets, aes(dates, fill="cadetblue3")) +
   geom_histogram() + 
   labs(title="Distribution of Tweets")
 ```
-
-# Max favorites on a tweet (most popular tweet?)
