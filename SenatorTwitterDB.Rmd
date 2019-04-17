@@ -19,6 +19,61 @@ library(ggrepel)
 
 ## Part 1. Data Collection
 
+Establishing a connection with the Twitter API
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+access_token_secret <- "uTBqRxTxq5X1ir08qfxmOPBnkzMcSaLoHwEMMsEX7UO7N" #replace with your access token secret
+consumer_key       <- "9gA8Qke0e1LMXsKMXNo1Ws5jN" #replace with your key
+consumer_secret    <- "w1V5GWji8roYcnTrfpBFhEFqmjuaU56i6xDINFUisU0t3ftBje" #replace with your secret
+access_token       <- "342952076-IAH8xQctBhdm0E4duIjdTGO04ooVQzv8W4FAsr0S" #replace with your access token
+appname <- "DS4100_App"
+
+
+# create token named "twitter_token"
+twitter_token <- rtweet::create_token(app = appname,
+                                      consumer_key = consumer_key,
+                                      consumer_secret = consumer_secret,
+                                      access_token = access_token,
+                                      access_secret = access_token_secret)
+```
+
+Segment Senators for Tweet Collection
+```{r}
+# We segmented the 100 senators into groups for data collection
+load("senatorDataDF.Rda")
+beg_senators_1 <- senatorsdf[c(1:8),]
+beg_senators_2 <- senatorsdf[c(9:16),]
+beg_senators_3 <- senatorsdf[c(17:24),]
+beg_senators_4 <- senatorsdf[c(25:33),]
+mid_senators_1 <- senatorsdf[c(34:42),]
+mid_senators_2 <- senatorsdf[c(43:51),]
+mid_senators_3 <- senatorsdf[c(52:60),]
+mid_senators_4 <- senatorsdf[c(61:66),]
+end_senators_1 <- senatorsdf[c(67:75),]
+end_senators_2 <- senatorsdf[c(76:83),]
+end_senators_3 <- senatorsdf[c(84:91),]
+end_senators_4 <- senatorsdf[c(92:100),]
+```
+
+Each team member collected tweets using twitter's 'get_timeline' function as displayed below. It is commmented out because we saved the data with a data dumb as a .Rda file which will be loaded below.
+```{r}
+# This is an example of how get_timeline was utilized
+#tweets_beg_1 <- get_timeline(beg_senators_1$twitter, n = 80, max_id = NULL, home = FALSE, parse = TRUE, check = TRUE, token = NULL)
+#tweets_beg_2 <- get_timeline(beg_senators_2$twitter, n = 80, max_id = NULL, home = FALSE, parse = TRUE, check = TRUE, token = NULL)
+#tweets_beg_3 <- get_timeline(beg_senators_3$twitter, n = 80, max_id = NULL, home = FALSE, parse = TRUE, check = TRUE, token = NULL)
+#tweets_beg_4 <- get_timeline(beg_senators_4$twitter, n = 80, max_id = NULL, home = FALSE, parse = TRUE, check = TRUE, token = NULL)
+
+# Information from twitter was combined
+#tweets_beg_all <- rbind(tweets_beg_1, tweets_beg_2)
+#tweets_beg_all <- rbind(tweets_beg_all, tweets_beg_3)
+#tweets_beg_all <- rbind(tweets_beg_all, tweets_beg_4)
+
+# Finally, tweet information was saved as a .Rda file
+# save(tweets_beg_all, file="tweetsBegAll.Rda")
+```
+
+
 Loading data pulled using the rtweet API
 ```{r}
 load("tweetsMidAll.Rda")
