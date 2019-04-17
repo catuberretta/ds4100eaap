@@ -14,6 +14,7 @@ library(wordcloud)
 library(stm)
 library(rquery)
 library(reshape2)
+library(ggrepel)
 ```
 
 ## Part 1. Data Collection
@@ -205,6 +206,11 @@ senator_personal_information_df$X1 <- NULL
 
 ## Part 4. Database Creation
 
+ERD 
+```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics("img/ERD.png")
+```
+
 Creating the EAAP (Emotional Analysis of American Politics) Database
 ```{r database}
 fn <- "eaap.sqlite"
@@ -269,8 +275,7 @@ dbWriteTable(conn = db, name = "Tweet_Metadata", value = tweet_meta_df, row.name
 Word Cloud
 ```{r wordcloud}
 
-all_tweets <- dbGetQuery(db, "SELECT *  
-                      FROM Tweets")
+all_tweets <- dbGetQuery(db, "SELECT Text FROM Tweets")
 
 
 tweet_text <- tibble(text = all_tweets$Text)
@@ -355,7 +360,9 @@ tweet_text %>%
 
 Hashtag Analysis
 ```{r}
-hashtags <- tibble(text = all_tweets$Hashtag)
+all_hashtags <- dbGetQuery(db, "SELECT Hashtag FROM Tweets")
+
+hashtags <- tibble(text = all_hashtags$Hashtag)
 
 hashtagCounts <- hashtags %>%
   unnest_tokens(word, text) %>%
@@ -381,10 +388,13 @@ hashtagCounts %>%
 
 Distribution of Tweets: Based on the date that they were created.
 ```{r}
-dates <- as.Date(all_tweets$Created_at)
+all_dates <- dbGetQuery(db, "SELECT Created_at  
+                      FROM Tweets")
 
-ggplot(all_tweets, aes(dates, fill="cadetblue3")) +
-  geom_histogram() + 
+dates <- as.Date(all_dates$Created_at)
+
+ggplot(all_tweets, aes(dates)) +
+  geom_histogram(color="cyan4", fill="cyan4") + 
   labs(title="Distribution of Tweets")
 ```
 
@@ -544,4 +554,91 @@ topTweeters <- senator_tweets[order(senator_tweets$activityindex,decreasing=T)[1
 # Find usernames that do not overlap between the top five most popular tweets and the most active / popular Twitters
 setdiff(top_popularityTweets$Username, topTweeters$Username)
 
+```
+
+Sentiment analysis on the tweets of the most active Senators
+```{r}
+senators_and_activity <- dbGetQuery(db, "SELECT Username, activityindex FROM Senators_PI")
+# Gettting the top five Senators based on activity level
+senators_and_activity %>% arrange(desc(activityindex)) %>% top_n(5)
+
+# Getting the top five most active Senator's tweets
+sanders_tweets <- dbGetQuery(db, "SELECT Text FROM Tweets WHERE Username = 'SenSanders'")
+schumers_tweets <- dbGetQuery(db, "SELECT Text FROM Tweets WHERE Username = 'SenSchumer'")
+grahms_tweets <- dbGetQuery(db, "SELECT Text FROM Tweets WHERE Username = 'LindseyGrahamSC'")
+pauls_tweets <- dbGetQuery(db, "SELECT Text FROM Tweets WHERE Username = 'RandPaul'")
+warrens_tweets <- dbGetQuery(db, "SELECT Text FROM Tweets WHERE Username = 'SenWarren'")
+
+
+# Bernie Sanders Sentiment Analysis
+sanders_tweets <- tibble(text = sanders_tweets$Text)
+sanders_WordCounts <- sanders_tweets %>%
+  unnest_tokens(word, text) %>%
+  group_by(word) %>% 
+  summarize(count=n())
+
+sanders_nrc <- sanders_WordCounts %>% 
+  inner_join(nrc) %>%
+  group_by(sentiment)
+
+plot_words <- sanders_nrc %>%
+  group_by(sentiment) %>%
+  count(word, sort = TRUE) %>%
+  arrange(desc(n)) %>%
+  slice(seq_len(10)) %>%
+  ungroup()
+
+plot_words %>%
+  ggplot(aes(word, 1, label = word, fill = sentiment )) +
+  geom_point(color = "transparent") +
+  geom_label_repel(force = 1,nudge_y = .5,  
+                   direction = "y",
+                   box.padding = 0.05,
+                   segment.color = "transparent",
+                   size = 3) +
+  facet_grid(~sentiment) +
+  theme(axis.text.y = element_blank(), axis.text.x = element_blank(),
+        axis.title.x = element_text(size = 6),
+        panel.grid = element_blank(), panel.background = element_blank(),
+        panel.border = element_rect("lightgray", fill = NA),
+        strip.text.x = element_text(size = 9)) +
+  xlab(NULL) + ylab(NULL) +
+  ggtitle("Bernie Sanders NRC Sentiment") +
+  coord_flip()
+
+# Lindsey Grahm Sentiment Analysis
+grahms_tweets <- tibble(text = grahms_tweets$Text)
+grahms_WordCounts <-grahms_tweets %>%
+  unnest_tokens(word, text) %>%
+  group_by(word) %>% 
+  summarize(count=n())
+
+grahms_nrc <- grahms_WordCounts %>% 
+  inner_join(nrc) %>%
+  group_by(sentiment)
+
+plot_words2 <- grahms_nrc  %>%
+  group_by(sentiment) %>%
+  count(word, sort = TRUE) %>%
+  arrange(desc(n)) %>%
+  slice(seq_len(10)) %>%
+  ungroup()
+
+plot_words2 %>%
+  ggplot(aes(word, 1, label = word, fill = sentiment )) +
+  geom_point(color = "transparent") +
+  geom_label_repel(force = 1,nudge_y = .5,  
+                   direction = "y",
+                   box.padding = 0.05,
+                   segment.color = "transparent",
+                   size = 3) +
+  facet_grid(~sentiment) +
+  theme(axis.text.y = element_blank(), axis.text.x = element_blank(),
+        axis.title.x = element_text(size = 6),
+        panel.grid = element_blank(), panel.background = element_blank(),
+        panel.border = element_rect("lightgray", fill = NA),
+        strip.text.x = element_text(size = 9)) +
+  xlab(NULL) + ylab(NULL) +
+  ggtitle("Lindsey Grahm NRC Sentiment") +
+  coord_flip()
 ```
