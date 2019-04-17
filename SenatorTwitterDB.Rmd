@@ -1,9 +1,13 @@
 ---
 title: "Sentiment Analysis in American Politics - Twitter Data from March"
 author: "Melissa Michels, Fiona Tran, Catu Berretta"
-date: "4/8/2019"
-output: html_document
+date: "4/17/2019"
+output:
+  pdf_document: default
+  html_document: default
 ---
+
+\clearpage
 
 ### Problem Description:
 
@@ -790,7 +794,7 @@ As displayed above, we retrieved the tweets from Senators with the top activity 
 
 2. Another issue we ran into was different senators tweeting in different frequencies. So for example, the last 80 tweets for Senator A might be from the last two weeks but for Senator B they might be from the last 2 months. The reason we decided to keep all those tweets anyway was to be able to still get a good overview of an account’s overall sentiment equally among all senators. More importantly, the amount of tweets that were outliers in the sense that they dated to before March were very minimal and therefore, didn’t have that much impact on the analysis.
 
-3.Finally, when we retrieved the Senator’s personal information, we were not able to get their Twitter username and party from the same source. We retrieved their parties from Wikipedia, which lists their name and party. From then on, it was a matter of performing an inner_join based on their names with the table that had their username and state. However, we ran into the issue of nicknames: in one table Senator Sanders was listed under Bernie and in another, listed as Bernard. We attempted to use Regex to clean up the data but this proved to cause more issues as we could not replace all Tom’s with Thomas because at times, Tom was both a nickname and an actual name (So not every Tom was a Thomas). Our solution for this was to replace the names by comparing the tables manually, 
+3. Finally, when we retrieved the Senator’s personal information, we were not able to get their Twitter username and party from the same source. We retrieved their parties from Wikipedia, which lists their name and party. From then on, it was a matter of performing an inner_join based on their names with the table that had their username and state. However, we ran into the issue of nicknames: in one table Senator Sanders was listed under Bernie and in another, listed as Bernard. We attempted to use Regex to clean up the data but this proved to cause more issues as we could not replace all Tom’s with Thomas because at times, Tom was both a nickname and an actual name (So not every Tom was a Thomas). Our solution for this was to replace the names by comparing the tables manually, 
 
 ### What we learned 
 
@@ -800,3 +804,9 @@ We also learned that there are limitations to sentiment analysis. We found with 
 ### Future work
 
 For future work, we would aim to gather more information, obtaining more tweets over a longer period of time. This would allow us to analyze patterns and trends over months and years, which given how rapidly the use of Twitter by politicians is growing could lead to some interesting findings. This could also be used to conduct research like that of Jonathan Bright and his team, where we could attempt to predict success in elections based on Twitter activity/engagement. This could answer the question: are more engaged politicians more or less likely to become elected to office?
+
+### References:
+arXiv, Emerging Technology from the. “Can Political Tweets Win an Election? This Research Suggests They Can.” MIT Technology Review, MIT Technology Review, 26 Oct. 2017, www.technologyreview.com/s/609229/how-tweets-translate-into-votes/.
+
+Silge, Julia, and David Robinson. “Text Mining with R.” 2 Sentiment Analysis with Tidy Data, 23 Mar. 2019, www.tidytextmining.com/sentiment.html.
+
