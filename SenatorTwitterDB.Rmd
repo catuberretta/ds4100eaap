@@ -1,6 +1,6 @@
 ---
 title: "Sentiment Analysis in American Politics - Twitter Data from March"
-author: "Melissa Michels, Fiona Tran, Catu Barretta"
+author: "Melissa Michels, Fiona Tran, Catu Berretta"
 date: "4/8/2019"
 output: html_document
 ---
@@ -517,4 +517,31 @@ whmSentimentPartyAnalysis <- whmSentiment %>%
 whmSentimentPartyAnalysis %>%
   ggplot(aes(x=party, y=share, fill = sentiment)) +
   geom_bar(stat="identity")
+```
+
+Find top 5 most popular tweets and compare against popularity index
+```{r}
+
+# Gather data from table and filter out retweets because we are trying to find the top five most popular original tweets. 
+popular_tweets <- dbGetQuery(db, "SELECT Username, Text, Favorite_count, Retweet_count
+                      FROM Tweets WHERE Is_Retweet = 0")
+
+# Get top tweets based on favorite count
+top_favCount <- popular_tweets[order(popular_tweets$Favorite_count,decreasing=T)[1:5],]
+
+# Get top tweets based on retweet count
+top_retweetCount <- popular_tweets[order(popular_tweets$Retweet_count,decreasing=T)[1:5],]
+
+# Combine retweet and favorites count
+popular_tweets$tweet_popularity <- popular_tweets$Retweet_count + popular_tweets$Favorite_count
+
+# Get top tweets based on combined retweet and favorites count
+top_popularityTweets <- popular_tweets[order(popular_tweets$tweet_popularity,decreasing=T)[1:5],]
+
+senator_tweets <- dbGetQuery(db, "SELECT Name, Username, activityindex FROM Senators_PI")
+topTweeters <- senator_tweets[order(senator_tweets$activityindex,decreasing=T)[1:5],]
+
+# Find usernames that do not overlap between the top five most popular tweets and the most active / popular Twitters
+setdiff(top_popularityTweets$Username, topTweeters$Username)
+
 ```
