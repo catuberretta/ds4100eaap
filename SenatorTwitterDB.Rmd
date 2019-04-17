@@ -395,66 +395,83 @@ ggplot(all_tweets, aes(dates, fill="cadetblue3")) +
 
 Green New Deal Hashtag Analysis
 ```{r}
+#Query database for tweets using #GreenNewDeal
 gnd <- dbGetQuery(db, "SELECT t.Username, Text, State, Hashtag, Party FROM Tweets t INNER JOIN Senators_PI s ON t.Username = s.Username WHERE Hashtag LIKE '%GreenNewDeal%'")
 
+#Place the results of the query in a tibble
 gnd_tibble <- tibble(text = gnd$Text, state = gnd$State, party = gnd$Party)
 
+#Unnest words from text and group them by state, party, then word
 gndSentiment <- gnd_tibble %>% 
   unnest_tokens(word, text) %>%
   group_by(state, party, word) %>%
   summarize(count=n())
 
+#Use NRC lexicon (tidytext) to gather overall sentiment of tweets and plot using ggplot
 gndSentiment %>% 
   inner_join(nrc) %>%
   group_by(sentiment) %>%
   summarize(score = sum(count)) %>%
   mutate(share = score/sum(score) * 100) %>%
   ggplot(aes(x=sentiment, y=share, fill = sentiment)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity") + 
+  labs(title="Sentiment on Green New Deal", subtitle="Overall sentiment analysis using the nrc lexicon on tweets using #GreenNewDeal")
 
+#Use NRC lexicon (tidytext) to gather sentiment of tweets by party and plot using ggplot
 gndSentiment %>% 
   inner_join(nrc) %>%
   group_by(party, sentiment) %>%
   summarize(score = sum(count)) %>%
   mutate(share = score/sum(score) * 100) %>%
   ggplot(aes(x=sentiment, y=share, fill = party)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity") + 
+  labs(title="Party Sentiment on Green New Deal", subtitle="Sentiment analysis by party using the nrc lexicon on tweets using #GreenNewDeal")
 
+#Use NRC lexicon (tidytext) to gather sentiment of tweets by state and plot using ggplot
 gndSentiment %>% 
   inner_join(nrc) %>%
   group_by(state, sentiment) %>%
   summarize(score = sum(count)) %>%
   mutate(share = score/sum(score) * 100) %>%
   ggplot(aes(x=state, y=share, fill = sentiment)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity") + 
+  labs(title="State Sentiment on Green New Deal", subtitle="Sentiment analysis by state using the nrc lexicon on tweets using #GreenNewDeal")
 
+#Use bing lexicon (tidytext) to gather overall sentiment of tweets and plot using ggplot
 gndSentiment %>% 
   inner_join(bing) %>%
   group_by(sentiment) %>%
   summarize(score = sum(count)) %>%
   mutate(share = score/sum(score) * 100) %>%
   ggplot(aes(x=sentiment, y=share, fill = sentiment)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity") + 
+  labs(title="Sentiment on Green New Deal", subtitle="Overall positive/negative sentiment analysis using the bing lexicon on tweets using #GreenNewDeal")
 
+#Use bing lexicon (tidytext) to gather sentiment of tweets by state
 gndSentimentStateAnalysis <- gndSentiment %>% 
   inner_join(bing) %>%
   group_by(state, sentiment) %>%
   summarize(score = sum(count)) %>%
   mutate(share = score/sum(score) * 100)
 
+#Plot using ggplot
 gndSentimentStateAnalysis %>%
   ggplot(aes(x=state, y=share, fill = sentiment)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity") + 
+  labs(title="State Sentiment on Green New Deal", subtitle="Positive/negative sentiment analysis by state using the bing lexicon on tweets using #GreenNewDeal")
 
+#Use bing lexicon (tidytext) to gather sentiment of tweets by party
 gndSentimentPartyAnalysis <- gndSentiment %>%
   inner_join(bing) %>%
   group_by(party, sentiment) %>%
   summarize(score = sum(count)) %>%
   mutate(share = score/sum(score) * 100)
 
+#Plot using ggplot
 gndSentimentPartyAnalysis %>%
   ggplot(aes(x=party, y=share, fill = sentiment)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity") + 
+  labs(title="Party Sentiment on Green New Deal", subtitle="Positive/negative sentiment analysis by party using the bing lexicon on tweets using #GreenNewDeal")
 
 
 ```
@@ -462,66 +479,83 @@ gndSentimentPartyAnalysis %>%
 
 Women's History Month
 ```{r}
+#Query database for tweets using #WomensHistoryMonth
 whm <- dbGetQuery(db, "SELECT t.Username, Text, State, Hashtag, Party FROM Tweets t INNER JOIN Senators_PI s ON t.Username = s.Username WHERE Hashtag LIKE '%WomensHistoryMonth%'")
 
+#Place the results of the query in a tibble
 whm_tibble <- tibble(text = whm$Text, state = whm$State, party = whm$Party)
 
+#Unnest words from text and group them by state, party, then word
 whmSentiment <- whm_tibble %>% 
   unnest_tokens(word, text) %>%
   group_by(state, party, word) %>%
   summarize(count=n())
 
+#Use NRC lexicon (tidytext) to gather overall sentiment of tweets and plot using ggplot
 whmSentiment %>% 
   inner_join(nrc) %>%
   group_by(sentiment) %>%
   summarize(score = sum(count)) %>%
   mutate(share = score/sum(score) * 100) %>%
   ggplot(aes(x=sentiment, y=share, fill = sentiment)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity") + 
+  labs(title="Sentiment on Women's History Month", subtitle="Overall sentiment analysis using the nrc lexicon on tweets using #WomensHistoryMonth")
 
+#Use NRC lexicon (tidytext) to gather sentiment of tweets by party and plot using ggplot
 whmSentiment %>% 
   inner_join(nrc) %>%
   group_by(party, sentiment) %>%
   summarize(score = sum(count)) %>%
   mutate(share = score/sum(score) * 100) %>%
   ggplot(aes(x=sentiment, y=share, fill = party)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity") + 
+  labs(title="Party Sentiment on Women's History Month", subtitle="Sentiment analysis by party using the nrc lexicon on tweets using #WomensHistoryMonth")
 
+#Use NRC lexicon (tidytext) to gather sentiment of tweets by state and plot using ggplot
 whmSentiment %>% 
   inner_join(nrc) %>%
   group_by(state, sentiment) %>%
   summarize(score = sum(count)) %>%
   mutate(share = score/sum(score) * 100) %>%
   ggplot(aes(x=state, y=share, fill = sentiment)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity") + 
+  labs(title="State Sentiment on Women's History Month", subtitle="Sentiment analysis by state using the nrc lexicon on tweets using #WomensHistoryMonth")
 
+#Use bing lexicon (tidytext) to gather overall sentiment of tweets and plot using ggplot
 whmSentiment %>% 
   inner_join(bing) %>%
   group_by(sentiment) %>%
   summarize(score = sum(count)) %>%
   mutate(share = score/sum(score) * 100) %>%
   ggplot(aes(x=sentiment, y=share, fill = sentiment)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity") + 
+  labs(title="Sentiment on Women's History Month", subtitle="Overall positive/negative sentiment analysis using the bing lexicon on tweets using #WomensHistoryMonth")
 
+#Use bing lexicon (tidytext) to gather sentiment of tweets by state
 whmSentimentStateAnalysis <- whmSentiment %>% 
   inner_join(bing) %>%
   group_by(state, sentiment) %>%
   summarize(score = sum(count)) %>%
   mutate(share = score/sum(score) * 100)
 
+#Plot using ggplot
 whmSentimentStateAnalysis %>%
   ggplot(aes(x=state, y=share, fill = sentiment)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity") + 
+  labs(title="State Sentiment on Women's History Month", subtitle="Overall positive/negative sentiment analysis by state using the bing lexicon on tweets using #WomensHistoryMonth")
 
+#Use bing lexicon (tidytext) to gather sentiment of tweets by party
 whmSentimentPartyAnalysis <- whmSentiment %>% 
   inner_join(bing) %>%
   group_by(party, sentiment) %>%
   summarize(score = sum(count)) %>%
   mutate(share = score/sum(score) * 100)
 
+#Plot using ggplot
 whmSentimentPartyAnalysis %>%
   ggplot(aes(x=party, y=share, fill = sentiment)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity") + 
+  labs(title="Party Sentiment on Women's History Month", subtitle="Overall positive/negative sentiment analysis by party using the bing lexicon on tweets using #WomensHistoryMonth")
 ```
 
 Find top 5 most popular tweets and compare against popularity index
