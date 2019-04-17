@@ -5,6 +5,20 @@ date: "4/8/2019"
 output: html_document
 ---
 
+### Problem Description:
+
+In 2019, social media, as a tool of communication for government authorities, has become commonplace. Take America’s current president, Donald Trump, who has a very active Twitter account with almost 60 million followers and over 41,000 tweets. The way Trump expresses himself online has been a very controversial subject, as his inflammatory vocabulary has often times promoted hostile behaviour. It’s not out of the norm for officials to have Twitter, Facebook, and Instagram accounts. In fact, it can play an important role in their jobs and public opinion. Take the research of Jonathan Bright and his team at the Oxford Internet Institute in the U.K on the recent parliament elections (May 2015 and June 2017). They found that “MPs that had a Twitter account typically had vote shares around 7- 9% higher than those who did not”, which could turn out to be incredibly decisive as around 14% of the electoral competitions involved in the study where won by a margin of less than 5% (MIT Technology Review, 2019). Bright concludes that “overall the evidence suggests social media use makes a genuinely important difference to electoral campaigns.” The use of Twitter can have a significant impact on the public view of a government official, as it makes communication more accessible but also informal. We want to analyze the way government officials communicate with their constituents on this more informal platform: what kind of sentiment are they putting out there and how are they discussing current topics?
+
+### Rationale for Data Selection
+ 
+As previously stated, our primary source we used for data collection was Twitter. Because we wanted to gain a better understanding of the important political topics being discussed and the sentiment around them, we decided to narrow the scope of the project to focus on the current United States Senators of the 116th Congress. The US Senate is composed of senators, each of whom represents a single state in its entirety. Each state, regardless of its population size, is equally represented by two senators. We also chose to focus on their Twitter accounts because this provides us with an easily measurable and accessible way to understanding: what topics they discuss with the public, their sentiment around those topics, and how they engage with other users online.
+The three primary sources of data used for our project include: Twitter handles (usernames) for all 100 senators, tweets for all 100 senators, each senator’s political party, and the state that each senator represents. In order to gain access to the senators’ tweets, it was crucial that we had a standardized way of obtaining the usernames corresponding to their Twitter profiles. We began with scraping their Twitter usernames online. Once we had their usernames we were able to use rtweet to retrieve their most recent 80 tweets from the month of March. We further scraped the political party and state of each representative. We felt that political party and state were two crucial attributes that would help us further segment the sentiment around trending topics.
+
+### Justification for Processes 
+
+For this project, our group decided to use the Rtweet and SelectorGadget as the main tools to aid in data retrieval. We used rtweet to gather tweets from all the senators. It is an accessible and effective tool that uses access tokens granted by Twitter. With SelectorGadget we gathered complementary data for the senators such as their affiliated political parties. Using this tool, we were able to scrape names and parties and join them with the names that we already had. Since we did not want to re-run the calls to retrieve data from Twitter, we stored the data in a SQLite database. This would ensure that all the data would be easily accessible through SQL queries. For the sentiment analysis, we decided to use the tidytext package. We found that tidytext was a great use for this project since it contained a sentiments dataset. We ran the words used in tweets against the sentiments dataset using the “nrc”, “bing”, and “afinn” lexicon. Each lexicon was used for different types of analysis which will be discussed later on in the report. Combining tidytext with ggplot was an efficient way to visually analyze the tweets. Finally, for project management, we used Github/Git as a way to version control and share the code. 
+
+
 Libraries
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -19,8 +33,8 @@ library(ggrepel)
 
 ## Part 1. Data Collection
 
-Establishing a connection with the Twitter API
-```{r setup, include=FALSE}
+### Establishing a connection with the Twitter API
+```{r include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
 access_token_secret <- "uTBqRxTxq5X1ir08qfxmOPBnkzMcSaLoHwEMMsEX7UO7N" #replace with your access token secret
@@ -38,7 +52,7 @@ twitter_token <- rtweet::create_token(app = appname,
                                       access_secret = access_token_secret)
 ```
 
-Segment Senators for Tweet Collection
+### Segment Senators for Tweet Collection
 ```{r}
 # We segmented the 100 senators into groups for data collection
 load("senatorDataDF.Rda")
@@ -56,7 +70,8 @@ end_senators_3 <- senatorsdf[c(84:91),]
 end_senators_4 <- senatorsdf[c(92:100),]
 ```
 
-Each team member collected tweets using twitter's 'get_timeline' function as displayed below. It is commmented out because we saved the data with a data dumb as a .Rda file which will be loaded below.
+This code uses get_timeline() from the rtweet package to retrieve 80 of the latest tweets from the given list of Twitter handles. The results are saved to a single dataframe and then moved to an SQLite database. It is commmented out because we saved the data with a data dumb as a .Rda file which will be loaded below.
+
 ```{r}
 # This is an example of how get_timeline was utilized
 #tweets_beg_1 <- get_timeline(beg_senators_1$twitter, n = 80, max_id = NULL, home = FALSE, parse = TRUE, check = TRUE, token = NULL)
@@ -74,7 +89,7 @@ Each team member collected tweets using twitter's 'get_timeline' function as dis
 ```
 
 
-Loading data pulled using the rtweet API
+### Loading data pulled using the rtweet API
 ```{r}
 load("tweetsMidAll.Rda")
 load("tweetsEndAll.Rda")
@@ -82,14 +97,14 @@ load("tweetsBegAll.Rda")
 ```
 We aimed for all members of our group to become familiar with the rtweet API. We split the 100 senators among the three of us to obtain the data. This allowed us to minimize time spent obtaining the data and allowed for more efficient data collection. We each created a dataframe and saved it as a .Rda object. The code above loads the dataframes that we individually created.
 
-Combine all tweets into one dataframe
+### Combine all tweets into one dataframe
 ```{r merging data}
 all_tweets <- rbind(tweets_beg_all, tweets_mid_all, tweets_end_all)
 ```
 
 ## Part 2. Data Cleaning
 
-Create the senator personal information tibble
+### Create the senator personal information tibble
 ```{r personal information tibble}
 
 # Code used to get Senator party information
@@ -113,7 +128,7 @@ senator_personal_information_df <- inner_join(senator_parties, senator_personal_
 ```
 
 
-Create the tweet information tibble
+### Create the tweet information tibble
 ```{r tweet info tibble}
 tweet_information <- all_tweets %>% select(screen_name, 
                                            status_id, 
@@ -150,7 +165,7 @@ colnames(tweet_information_df) <- tweet_information_names
 ```
 
 
-Create the tweet meta data tibble
+### Create the tweet meta data tibble
 ```{r meta data tibble}
 tweet_meta <- all_tweets %>% select(user_id,
                                     status_id,
@@ -182,7 +197,7 @@ colnames(tweet_meta_df) <- tweet_meta_df_names
 
 ## Part 3. Exploratory Data Analysis
 
-Senator Details for Number of Followers, Avg Retweets, and Avg Favorites
+### Senator Details for Number of Followers, Avg Retweets, and Avg Favorites
 ```{r}
 # Average number of retweets/favorites per tweet
 info1 <- tweet_information_df %>% group_by(Username) %>% summarize(avgretweets = mean(Retweet_count),
@@ -195,7 +210,7 @@ activityindexvaluesdf <- inner_join(info1, info2, by="Username")
 head(activityindexvaluesdf)
 ```
 
-Relationship between number of followers and average retweets per tweet
+### Relationship between number of followers and average retweets per tweet
 ```{r}
 ggplot(activityindexvaluesdf, aes(x=numfollowers, y=avgretweets)) + 
   geom_point() +
@@ -203,7 +218,7 @@ ggplot(activityindexvaluesdf, aes(x=numfollowers, y=avgretweets)) +
   labs(title="Number of followers vs. Average Retweets")
 ```
 
-Relationship between number of followers and average favorites per tweet
+### Relationship between number of followers and average favorites per tweet
 ```{r}
 ggplot(activityindexvaluesdf, aes(x=numfollowers, y=avgfavorites)) + 
   geom_point() +
@@ -221,7 +236,7 @@ As displayed above, the relationship between a Senator's average favorites and a
 
 We will also normalize the data using mix/max normalization - by mapping all values between 0 and 1. This will allow for standardized comparisons.
 
-Calculating the Activity Index
+### Calculating the Activity Index
 ```{r}
 normalize <- function(x) {
     ((x - min(x)) / (max(x) - min(x)))
@@ -237,7 +252,10 @@ activityindexdf %>% arrange(desc(activityindex))
 ```
 A Senator's activity index is calculated by observing three factors of their online twitter presence. 25% of their score is comprised of the number of followers for that senator. 37.5% is calculated by their average number of rewteets per tweet and 37.5% is comprised of the average number of favorites they receive per tweet.
 
-So who are the most active senators?
+After retrieving the tweet data, we wanted to develop an activity level rating with which we can classify and rank how active each senator was over the last month. We identified the potentially most important characteristics for this rating to be a Senators: number of followers, average retweets per tweet, and average favorites per tweet. In order to understand the relationship between these factors, we began exploratory analysis.
+As displayed above, the relationship between a Senator’s number of followers and the average retweets/favorites they receive is not a strong positive correlation. On the other hand, we did find that tweets that have high engagement with the public tend to receive a high number of retweets and favorites. Retweets involve a user to reshare the tweet to their timeline and share with their friends - thus, this is a higher level of engagement than clicking favorite.
+
+### So who are the most active senators?
 ```{r}
 activityindexdf %>% arrange(desc(activityindex))
 
@@ -249,7 +267,11 @@ activityindexdf %>% top_n(10) %>%
   labs(title="Top 10 Most Active Senators")
 ```
 
-Adding Activity Index to the Senator Personal Information Dataframe
+A Senators activity level rating for the month of March aims to measure their engagement with the public. It is derived from their average number of retweets/favorites per tweet and retweets is weighted higher than favorites.
+As displayed above, we first calculated the activity level for each Senator. Next we normalized their values using min max normalization so every value falls between 0 and 1. This allows for efficient comparison between values. Next, we arranged the list of Senators by their activity rating in descending order. As you can see, the most active Senators on Twitter who were most engaged with the public during this period are: Bernie Sanders, Chuck Schumer, Lindsey Graham, Rand Paul, Leader McConnell, and Elizabeth Warren. The activity level of each Senator will be recorded as an attribute in the Senator personal information table which will be described later in the report.
+
+
+### Adding Activity Index to the Senator Personal Information Dataframe
 ```{r}
 if(!("activityindex" %in% colnames(senator_personal_information_df)))
    {
@@ -259,14 +281,15 @@ if(!("activityindex" %in% colnames(senator_personal_information_df)))
 senator_personal_information_df$X1 <- NULL
 ```
 
+
 ## Part 4. Database Creation
 
 ERD 
-```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '100%'}
+```{r pressure, echo=FALSE, fig.cap="Visual Represenation of Database", out.width = '100%'}
 knitr::include_graphics("img/ERD.png")
 ```
 
-Creating the EAAP (Emotional Analysis of American Politics) Database
+### Creating the EAAP (Emotional Analysis of American Politics) Database
 ```{r database}
 fn <- "eaap.sqlite"
 #Check its existence
@@ -325,9 +348,12 @@ dbWriteTable(conn = db, name = "Tweet_Metadata", value = tweet_meta_df, row.name
 
 ```
 
+To create the database, we wanted to keep it simple but also maintain any extra information that might be useful for analysis later on. First, we created a Senators_PI table that holds a senator’s personal information (name, state they represent, their party and their Twitter username). Then, we have a Tweets table which holds the basic information of a Tweet (username of the person who tweeted it, favorite / retweet count, and so on). This relationship is a one-to-many (a senator has many tweets but a tweet only has one senator). Finally, we have the Tweet_Metadata table where we added all the extra Tweet information that wasn’t necessary for our base goals. This has a one-to-one relationship where every Tweet has one Metadata and vice versa. 
+
+
 ## Part 5. Data Analysis
 
-Word Cloud
+### Word Cloud
 ```{r wordcloud}
 
 all_tweets <- dbGetQuery(db, "SELECT Text FROM Tweets")
@@ -346,7 +372,11 @@ tweet_text %>%
   with(wordcloud(word, count, use.r.layout=FALSE, max.words = 150, random.order = FALSE, 
                  colors = brewer.pal(6, "Dark2"), scale=c(3,.1)))
 ```
-General Sentiment Analysis
+
+After creating our database, we retrieved all the tweets collected to explore the content in the form of a wordcloud utilizing the wordcloud library. First, we removed the stop works (things such as like or as) and unwanted words (things such as https or numbers). This allowed us to learn some of the most popular words appearing among all Senators tweets. The frequency of words is denoted by color and position. Each color represents a layer and the most frequent words are closer to the center of the wordcloud. The most popular words include: Senate, act, people, health, bill, president, national, women, etc.
+
+
+### General Sentiment Analysis
 ```{r}
 nrc = sentiments %>% filter(lexicon=="nrc")
 bing = sentiments %>% filter(lexicon=="bing")
@@ -375,8 +405,10 @@ wordCounts %>%
   labs(title="Sentiment in US Senator Tweets", subtitle="Positive and negative sentiment as share of sentiment words from last month's tweets.")
 ```
 
+The sentiment analysis packages we used for this project include the bing and nrc lexicons. The tidytext package in R contains these lexicons in the sentiments dataset. These lexicons are based on unigrams (i.e. single words). Each word is assigned a score for positive/negative sentiment and emotions like joy, anger, sadness and so forth. Above, we explored the general sentiment of all tweets using the bing and nrc lexicons. Sentiments are displayed as a share of sentiment words out of 100% (Julia Silge, 2019).
 
-ngrams
+
+### ngrams
 ```{r}
 fillerwords <- c("t.co", "https", "amp")
 fillerwordstable <- tibble("word" = fillerwords)
@@ -412,8 +444,10 @@ tweet_text %>%
   labs(title="NGram for all Tweets", subtitle="n=3")
 ```
 
+As displayed above, we used nGrams to explore groupings of words greater than one that occur most frequently. With n=4, we found that “the green new deal” and “the affordable care act” are topics being discussed over the month of March. We also found that Senators frequently share links to photos, videos, and articles.
 
-Hashtag Analysis
+
+### Hashtag Analysis
 ```{r}
 all_hashtags <- dbGetQuery(db, "SELECT Hashtag FROM Tweets")
 
@@ -441,7 +475,9 @@ hashtagCounts %>%
                  colors = brewer.pal(8, "Dark2"), scale=c(3,.4)))
 ```
 
-Distribution of Tweets: Based on the date that they were created.
+After an initial exploration and understanding of the tweets we collected, we believed it would be insightful to find the top trending hashtags of the time period. In addition to viewing the distribution of hashtags in a histogram, we created a wordcloud and found that the top topics and trends being discussed were GreenNewDeal and WomensHistoryMonth. We plan to focus on these events for further analysis. 
+
+### Distribution of Tweets: Based on the date that they were created.
 ```{r}
 all_dates <- dbGetQuery(db, "SELECT Created_at  
                       FROM Tweets")
@@ -453,7 +489,9 @@ ggplot(all_tweets, aes(dates)) +
   labs(title="Distribution of Tweets")
 ```
 
-Green New Deal Hashtag Analysis
+This shows where the distribution of the dates for the tweets. We can see that there are tweets before March, these corresponds to the senators who are not as active on their accounts. However, there are not a significant amount.
+
+### Green New Deal Hashtag Analysis
 ```{r}
 #Query database for tweets using #GreenNewDeal
 gnd <- dbGetQuery(db, "SELECT t.Username, Text, State, Hashtag, Party FROM Tweets t INNER JOIN Senators_PI s ON t.Username = s.Username WHERE Hashtag LIKE '%GreenNewDeal%'")
@@ -536,8 +574,12 @@ gndSentimentPartyAnalysis %>%
 
 ```
 
+Using the hashtag analysis, we saw that Green New Deal was the popular. We decided to see how the different senators were tweeting about the topic. First, we queried the database to retrieve all the tweets using #GreenNewDeal including the handle that wrote the tweet, the state the senator is from, the senator’s political party, and the text of the tweet. 
+Using the Tidytext package, we used the nrc lexicon to gather insight on the overall sentiment for all the tweets. We found that most of the tweets seem to have a positive and trust sentiment. We then decided to analyze by party, we were surprised to find that sentiments were pretty equal for both the Democratic and Republican parties. Next, we analyzed sentiments about the Green New Deal by state, the data points that did stand out were Nebraska tweets showed more fear and there was an absence of both trust and anger in Pennsylvania.
+We also decided to use the bing lexicon which organizes the text into either positive or negative categories. We first ran an overall sentiment analysis over all the tweets and were surprised to find that negative tweets were higher than positive tweets which was the opposite in the nrc lexicon analysis. We realized that the distribution of the negative categories for the nrc lexicon were more spread out than the positive categories. Next, we grouped the tweets by state and found that most states had a fair share of positive and negatives tweets with the exception of a few states such as Missouri, Pennsylvania, Iowa, and South Carolina. Then, we grouped the tweets by party, and found that Republicans seemed to have more negative things to say about the Green New Deal. 
 
-Women's History Month
+
+### Women's History Month
 ```{r}
 #Query database for tweets using #WomensHistoryMonth
 whm <- dbGetQuery(db, "SELECT t.Username, Text, State, Hashtag, Party FROM Tweets t INNER JOIN Senators_PI s ON t.Username = s.Username WHERE Hashtag LIKE '%WomensHistoryMonth%'")
@@ -618,7 +660,12 @@ whmSentimentPartyAnalysis %>%
   labs(title="Party Sentiment on Women's History Month", subtitle="Overall positive/negative sentiment analysis by party using the bing lexicon on tweets using #WomensHistoryMonth")
 ```
 
-Find top 5 most popular tweets and compare against activity index
+Women’s History Month was the second most popular hashtag used and we decided it would be a great way to test the accuracy of the Tidytext package sentiment analysis since we anticipate that most tweets for this topic would be positive. Similar to the first hashtag analysis, we first queried the database to retrieve all the tweets using the Women’s History Month hashtag.
+Using the nrc lexicon for overall sentiment analysis, the results were pretty close to what we expected. Most of the shares fell into categories with positive connotations. When we grouped the tweets by party, we found a pretty equal share for each category. There was also a fair distribution of categories among the states. These results were not as surprising since Women’s History Month is not a cause that politically motivated.
+Using the bing lexicon, we found that most of the tweets had a positive sentiment. When grouping the tweets by state and party, we did not see any results that we would not expect. The sentiment analysis of the Women’s History Month hashtag solidified our confidence in the Tidytext package since it was able to return results that we were expecting.
+
+
+### Find top 5 most popular tweets and compare against activity index
 ```{r}
 
 # Gather data from table and filter out retweets because we are trying to find the top five most active original tweets. 
@@ -645,7 +692,10 @@ setdiff(top_popularityTweets$Username, topTweeters$Username)
 
 ```
 
-Sentiment analysis on the tweets of the most active Senators
+We wanted to further gage the engagement and popularity of tweets versus Twitter accounts by finding the top five most popular tweets and comparing against the activity index. When we first gathered the tweets from the database, we filtered out retweets because we wanted to look at only original tweets. 
+When we try to find the usernames that do not overlap between the top five most popular tweets and the most active / popular Twitters, we get Character[0] meaning that the accounts with the highest activity indexes have tweeted the most popular tweets. This further justifies our activity index as we can see that the top five tweets of the last month were tweeted by the five senators that our activity index establishes as the most active / popular Twitter accounts. 
+
+### Sentiment analysis on the tweets of the most active Senators
 ```{r}
 senators_and_activity <- dbGetQuery(db, "SELECT Username, activityindex FROM Senators_PI")
 # Gettting the top five Senators based on activity level
@@ -731,3 +781,22 @@ plot_words2 %>%
   ggtitle("Lindsey Grahm NRC Sentiment") +
   coord_flip()
 ```
+
+As displayed above, we retrieved the tweets from Senators with the top activity index. We used the nrc index to find the most common words used by Senator Sanders and Senator Graham that use the NRC lexicon. The words were placed into 8 emotional categories. We see powerful words appear among both senators. “Collusion” is a word that appears for Senator Graham across categories of anger and fear. Words such as “criminal, crazy, and assault” are negative words that appear within Senator Sanders tweets. His tweets also invoke emotions of trust with words like “collective and authority”.
+
+### Issues we ran into and solutions
+
+1. While we were retrieving tweets using the rtweet package, we discovered that there was a limit to the number of tweets that could be retrieved which is 18,000 tweets every 15 minutes. To resolve this issue, we decided to change the scope of the tweets we wanted. We initially planned on retrieving about six months’ worth of tweets which would approximately be 500 tweets per senator. We decided to narrow down to one month which would be approximately 80 tweets per senator. To further speed the process of gathering tweets, we split up the senators between the three group members. In the end, we each used our own access tokens to retrieve about 80 tweets from 33/34 senators. This limits out findings as having a smaller set of tweets limits the conclusions we can infer, like long-term patterns and trends. 
+
+2. Another issue we ran into was different senators tweeting in different frequencies. So for example, the last 80 tweets for Senator A might be from the last two weeks but for Senator B they might be from the last 2 months. The reason we decided to keep all those tweets anyway was to be able to still get a good overview of an account’s overall sentiment equally among all senators. More importantly, the amount of tweets that were outliers in the sense that they dated to before March were very minimal and therefore, didn’t have that much impact on the analysis.
+
+3.Finally, when we retrieved the Senator’s personal information, we were not able to get their Twitter username and party from the same source. We retrieved their parties from Wikipedia, which lists their name and party. From then on, it was a matter of performing an inner_join based on their names with the table that had their username and state. However, we ran into the issue of nicknames: in one table Senator Sanders was listed under Bernie and in another, listed as Bernard. We attempted to use Regex to clean up the data but this proved to cause more issues as we could not replace all Tom’s with Thomas because at times, Tom was both a nickname and an actual name (So not every Tom was a Thomas). Our solution for this was to replace the names by comparing the tables manually, 
+
+### What we learned 
+
+As a result of conducting our term project, we learned that senators across the board employ primarily positive sentiment as well as diction that expresses trust and anticipation. These three sentiments account for 53% share of all sentiment words used in their tweets. Senators seem to use their platform as a way to connect with their followers rather than speak negatively. Sentiment did not vary drastically among parties. For example, in regards the Green New Deal hashtag, the Republican senators’ tweets were slightly more negative (by 10%) than the Democratic senators’ tweets. 
+We also learned that there are limitations to sentiment analysis. We found with the tidytext package we used we were restricted to bing, nrc and afinn lexicons. To enhance the field of sentiment analysis, these packages should be routinely updated to implement improvements based on feedback from experts or users. 
+
+### Future work
+
+For future work, we would aim to gather more information, obtaining more tweets over a longer period of time. This would allow us to analyze patterns and trends over months and years, which given how rapidly the use of Twitter by politicians is growing could lead to some interesting findings. This could also be used to conduct research like that of Jonathan Bright and his team, where we could attempt to predict success in elections based on Twitter activity/engagement. This could answer the question: are more engaged politicians more or less likely to become elected to office?
