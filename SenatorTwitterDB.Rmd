@@ -408,6 +408,22 @@ gndSentiment %>%
   geom_bar(stat="identity")
 
 gndSentiment %>% 
+  inner_join(nrc) %>%
+  group_by(party, sentiment) %>%
+  summarize(score = sum(count)) %>%
+  mutate(share = score/sum(score) * 100) %>%
+  ggplot(aes(x=sentiment, y=share, fill = party)) +
+  geom_bar(stat="identity")
+
+gndSentiment %>% 
+  inner_join(nrc) %>%
+  group_by(state, sentiment) %>%
+  summarize(score = sum(count)) %>%
+  mutate(share = score/sum(score) * 100) %>%
+  ggplot(aes(x=state, y=share, fill = sentiment)) +
+  geom_bar(stat="identity")
+
+gndSentiment %>% 
   inner_join(bing) %>%
   group_by(sentiment) %>%
   summarize(score = sum(count)) %>%
@@ -456,6 +472,22 @@ whmSentiment %>%
   summarize(score = sum(count)) %>%
   mutate(share = score/sum(score) * 100) %>%
   ggplot(aes(x=sentiment, y=share, fill = sentiment)) +
+  geom_bar(stat="identity")
+
+whmSentiment %>% 
+  inner_join(nrc) %>%
+  group_by(party, sentiment) %>%
+  summarize(score = sum(count)) %>%
+  mutate(share = score/sum(score) * 100) %>%
+  ggplot(aes(x=sentiment, y=share, fill = party)) +
+  geom_bar(stat="identity")
+
+whmSentiment %>% 
+  inner_join(nrc) %>%
+  group_by(state, sentiment) %>%
+  summarize(score = sum(count)) %>%
+  mutate(share = score/sum(score) * 100) %>%
+  ggplot(aes(x=state, y=share, fill = sentiment)) +
   geom_bar(stat="identity")
 
 whmSentiment %>% 
