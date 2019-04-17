@@ -618,10 +618,10 @@ whmSentimentPartyAnalysis %>%
   labs(title="Party Sentiment on Women's History Month", subtitle="Overall positive/negative sentiment analysis by party using the bing lexicon on tweets using #WomensHistoryMonth")
 ```
 
-Find top 5 most popular tweets and compare against popularity index
+Find top 5 most popular tweets and compare against activity index
 ```{r}
 
-# Gather data from table and filter out retweets because we are trying to find the top five most popular original tweets. 
+# Gather data from table and filter out retweets because we are trying to find the top five most active original tweets. 
 popular_tweets <- dbGetQuery(db, "SELECT Username, Text, Favorite_count, Retweet_count
                       FROM Tweets WHERE Is_Retweet = 0")
 
@@ -640,7 +640,7 @@ top_popularityTweets <- popular_tweets[order(popular_tweets$tweet_popularity,dec
 senator_tweets <- dbGetQuery(db, "SELECT Name, Username, activityindex FROM Senators_PI")
 topTweeters <- senator_tweets[order(senator_tweets$activityindex,decreasing=T)[1:5],]
 
-# Find usernames that do not overlap between the top five most popular tweets and the most active / popular Twitters
+# Find usernames that do not overlap between the top five most active tweets and the most active / popular Twitters
 setdiff(top_popularityTweets$Username, topTweeters$Username)
 
 ```
