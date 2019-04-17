@@ -205,6 +205,11 @@ senator_personal_information_df$X1 <- NULL
 
 ## Part 4. Database Creation
 
+ERD 
+```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics("img/ERD.png")
+```
+
 Creating the EAAP (Emotional Analysis of American Politics) Database
 ```{r database}
 fn <- "eaap.sqlite"
